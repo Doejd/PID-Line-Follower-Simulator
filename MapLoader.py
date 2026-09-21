@@ -26,3 +26,6 @@ class MapLoader:
         if not (0 < int(x) < self.map_image.get_width() and 0 <= int(y) < self.map_image.get_height()):
             raise IndexError(f"Coordinates ({x}, {y}) are out of bounds")
         return self.map_image.get_at((x, y))
+
+    def draw(self, surface):
+        surface.blit(self.map_image, (29, 30))

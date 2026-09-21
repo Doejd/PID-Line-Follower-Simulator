@@ -1,5 +1,4 @@
-import pygame, time
-import sys
+import pygame, sys
 from config import FPS
 from MapLoader import MapLoader
 
@@ -8,7 +7,7 @@ screen = pygame.display.set_mode((1300, 900)) # 1242 by 840 (3*size of board in 
 
 
 def main() -> None:
-    map_loader = MapLoader()
+    map_loader : MapLoader = MapLoader()
     clock = pygame.time.Clock()
     running = True
     while running:
@@ -17,6 +16,8 @@ def main() -> None:
                 running = False
                 pygame.quit()
                 sys.exit()
+        map_loader.draw(screen)
+        pygame.display.flip()
         clock.tick(FPS)
 
 if __name__ == "__main__":
