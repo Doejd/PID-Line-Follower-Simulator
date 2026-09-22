@@ -34,9 +34,9 @@ class Hermes:
         for sensor in self.sensors: sensor.move(dx, dy)
 
     def get_sensors_output(self, map : MapLoader):
-        # print(f"Hermes is at {self.center[0]}, {self.center[1]}") !!! Uncomment for debug info
-        # for sensor in self.sensors: print(f"Sensor at {sensor.x}, {sensor.y} sees {sensor.get_color(map)}") !!! Uncomment for debug info
-        return [sensor.get_color(map) for sensor in self.sensors]
+        #print(f"Hermes is at {self.center[0]}, {self.center[1]}") # !!! Uncomment for debug info
+        #for sensor in self.sensors: print(f"Sensor at {sensor.x}, {sensor.y} sees {sensor.get_color(map)}") # !!! Uncomment for debug info
+        return [sensor.get_color(map) for sensor in self.sensors] # comment when debugging
 
     def draw(self, surface : pygame.Surface):
         # for sensor in self.sensors: sensor.draw(surface) !!! Uncomment for debug info

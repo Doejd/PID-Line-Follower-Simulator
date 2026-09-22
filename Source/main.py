@@ -9,7 +9,7 @@ screen = pygame.display.set_mode((900, 600)) # 828 by 560 (2*size of board in cm
 
 def main() -> None:
     map_loader : MapLoader = MapLoader()
-    hermes = Hermes(200, 300)
+    hermes = Hermes(250, 300)
     clock = pygame.time.Clock()
     running = True
     while running:
@@ -19,6 +19,9 @@ def main() -> None:
                 running = False
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_z:
+                    print(hermes.get_sensors_output(map_loader))
         map_loader.draw(screen)
         hermes.draw(screen)
         pygame.display.flip()
