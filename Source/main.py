@@ -1,15 +1,15 @@
-import pygame, sys
+import pygame
+import sys
 from config import FPS, SCREEN_SIZE
 from MapLoader import MapLoader
-from Robot import Hermes
-
-pygame.init()
-screen = pygame.display.set_mode(SCREEN_SIZE)
+from Robot import Robot
 
 
 def main() -> None:
-    map_loader : MapLoader = MapLoader()
-    hermes = Hermes(250, 300)
+    pygame.init()
+    screen = pygame.display.set_mode(SCREEN_SIZE)
+    map_loader: MapLoader = MapLoader()
+    hermes = Robot(250, 300)
     clock = pygame.time.Clock()
     running = True
     while running:

@@ -4,11 +4,12 @@ import pygame
 from config import MARGIN
 
 class MapLoader:
-    def __init__(self, directory : str = "../Map Resources", filename: Optional[str] = None):
-        self.directory = Path(directory)
+    def __init__(self, directory: str = "../map_resources", filename: Optional[str] = None):
+        dir_path = Path(directory)
+        self.directory = dir_path
         self.map_image = self.open_image_map(filename)
 
-    def open_image_map(self, filename : Optional[str] = None) -> pygame.Surface:
+    def open_image_map(self, filename: Optional[str] = None) -> pygame.Surface:
         if not self.directory.is_dir():
             raise FileNotFoundError("Directory not found")
 
@@ -23,7 +24,7 @@ class MapLoader:
             raise FileNotFoundError("No .png files found in directory")
         return pygame.image.load(str(png_files[0]))
 
-    def get_pixel_color(self, x : int, y : int):
+    def get_pixel_color(self, x: int, y: int):
         x_ = int(x) - MARGIN[0] # convert from global coordinates to local coordinates
         y_ = int(y) - MARGIN[1] # convert from global coordinates to local coordinates
         if not (0 <= x_ < self.map_image.get_width() and 0 <= y_ < self.map_image.get_height()):
