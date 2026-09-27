@@ -14,10 +14,10 @@ points : list[tuple[int, int]] = [
     (200, 300),
     (400, 250),
     (600, 300),
-    (800, 500),
+    (800, 100),
     (621, 840),
 ]
 
 pygame.draw.lines(track, "black", False, points, LINE_WIDTH)
 
-pygame.image.save(track, "../map_resources/track.png")
+pygame.image.save(track, "map_resources/track.png")
