@@ -4,8 +4,8 @@ import pygame
 from config import MARGIN
 
 class MapLoader:
-    def __init__(self, directory: str = "map_resources", filename: Optional[str] = None):
-        dir_path = Path(directory)
+    def __init__(self, filename: Optional[str] = None):
+        dir_path = Path(__file__).resolve().parent.parent / "map_resources"
         self.directory = dir_path
         self.map_image = self.open_image_map(filename)
 

@@ -11,11 +11,11 @@ track.fill("white")
 
 points : list[tuple[int, int]] = [
     (621, 0),
-    (200, 300),
-    (400, 250),
-    (600, 300),
-    (800, 100),
-    (621, 840),
+    (621, 200),
+    (300, 200),
+    (300, 300),
+    (621, 300),
+    (621, 560),
 ]
 
 pygame.draw.lines(track, "black", False, points, LINE_WIDTH)

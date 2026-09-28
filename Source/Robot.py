@@ -1,16 +1,16 @@
 import math
+import pygame
 from pathlib import Path
 from typing import Optional
-import pygame
 from Sensor import Sensor
 from MapLoader import MapLoader
 from config import ROBOT_WIDTH, WHEEL_BASE, ROBOT_HEIGHT
 from config import RED, SENSOR_RADIUS
 
 class Robot:
-    def __init__(self, x: float, y: float, number_of_sensors: int = 16, image_path: Optional[str] = None):
+    def __init__(self, x: float, y: float, number_of_sensors: int = 16, image_path: Optional[str] = None, starting_angle: float = 0):
         self.pos = pygame.Vector2(x, y)
-        self.angle = 0
+        self.angle = starting_angle
         self.acceleration = 200
         self.turn_speed = 120
         self.speed = 0
@@ -64,19 +64,23 @@ class Robot:
     def move(self, steering_angle: float, speed: float, delta: float) -> None:
         """
             Moves the robot based on the given steering angle, speed, and time delta.
+
         :param steering_angle: The steering angle of the robot.
         :param speed: The speed of the robot.
         :param delta: The time delta for the movement.
         :return: None
         """
         angle_rad = math.radians(self.angle)
-        steering_angle_rad = math.radians(steering_angle)
 
         distance = speed * delta
         self.pos.x += distance * math.cos(angle_rad)
         self.pos.y -= distance * math.sin(angle_rad)
 
-        angular_velocity = speed / WHEEL_BASE * math.tan(steering_angle_rad)
+        max_steer = 45
+        clamped_steer = max(-max_steer, min(max_steer, steering_angle))
+        steering_angle_rad = math.radians(clamped_steer)
+        angular_velocity = (speed / WHEEL_BASE) * math.tan(steering_angle_rad)
+
         self.angle += math.degrees(angular_velocity * delta)
 
         self.sensors = self.set_sensors()
@@ -85,18 +89,18 @@ class Robot:
     def get_sensors_output(self, track_map: MapLoader) -> list[pygame.Color]:
         """
             Returns a list of colors detected by the robot's sensors.
-        Args
+
         :param track_map: The map loader object.
         :return: A list of colors detected by the robot's sensors.
         """
-        for sensor in self.sensors:
-            print(f"Sensor at {sensor.x}, {sensor.y} sees {sensor.get_color(track_map)}") # !!! Uncomment for debug info
+        """for sensor in self.sensors:
+            print(f"Sensor at {sensor.x}, {sensor.y} sees {sensor.get_color(track_map)}") # !!! Uncomment for debug info """
         return [sensor.get_color(track_map) for sensor in self.sensors]
 
     def draw(self, surface: pygame.Surface, draw_sensors: bool = True) -> None:
         """
             Draws the robot body at the correct rotation.
-        Args
+
         :param surface: The surface to draw the robot on.
         :param draw_sensors: Whether to draw the robot's sensors.
         :return: None
@@ -109,3 +113,12 @@ class Robot:
         if draw_sensors:
             for sensor in self.sensors:
                 sensor.draw(surface)
+
+    def do_pid(self) -> None:
+        """
+            Performs PID control on the robot.
+
+        :return: None
+        """
+        
+        
