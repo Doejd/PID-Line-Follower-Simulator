@@ -113,12 +113,5 @@ class Robot:
         if draw_sensors:
             for sensor in self.sensors:
                 sensor.draw(surface)
-
-    def do_pid(self) -> None:
-        """
-            Performs PID control on the robot.
-
-        :return: None
-        """
         
         
