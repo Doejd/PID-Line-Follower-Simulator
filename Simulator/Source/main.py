@@ -14,10 +14,10 @@ def calc_error(hermes : Robot, map_loader : MapLoader) -> float | int:
 def on_the_line(hermes : Robot, map_loader : MapLoader) -> bool:
     return any(color == black for color in hermes.get_sensors_output(map_loader))
 
-def clamp_error(prev_error: float | int,
+def clamp(val: float | int,
                 min_val: float | int,
                 max_val: float | int) -> float | int:
-    return max(min_val, min(prev_error, max_val))
+    return max(min_val, min(val, max_val))
 
 def main() -> None:
     pygame.init()
@@ -55,13 +55,13 @@ def main() -> None:
         
         error = calc_error(hermes, map_loader)
         if not on_the_line(hermes, map_loader):
-            error = clamp_error(prev_error, -8, 8)
+            error = clamp(prev_error, -8, 8)
             print("off the line ", error_sum)
 
         print(error)
         error_diff = error - prev_error
         error_sum += error
-        error_sum = max(-100, min(error_sum, 100))
+        error_sum = clamp(error_sum, -100, 100)
             
 
         correction = (error * Kp) + (error_diff * Kd) + (error_sum * Ki)
