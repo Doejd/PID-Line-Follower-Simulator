@@ -1,30 +1,31 @@
 import pygame
 import sys
 
-from Source.config import MARGIN
+from config import MARGIN
 from config import FPS, SCREEN_SIZE
 from MapLoader import MapLoader
 from Robot import Robot
 
-def CalcError(hermes : Robot, map_loader : MapLoader) -> int:
-    weights  = [8-x for x in range(17) if x-8 != 0]
-    error = 0
-    for i, sensor in enumerate(hermes.sensors):
-        color = sensor.get_color(map_loader)
-        isBlack : bool = (color == (0, 0, 0, 255))
-        error += isBlack * weights[i]
-    return error
+black = (0, 0, 0, 255)
+weights = [7.5 - i for i in range(16)]
+
+def calc_error(hermes : Robot, map_loader : MapLoader) -> int:
+    sensor_colors = hermes.get_sensors_output(map_loader)
+    return sum(weights[i] * (sensor_colors[i] == black) for i in range(16))
+
+def on_the_line(hermes : Robot, map_loader : MapLoader) -> bool:
+    return any(color == black for color in hermes.get_sensors_output(map_loader))
 
 def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode(SCREEN_SIZE)
     map_loader: MapLoader = MapLoader()
-    hermes = Robot(615+MARGIN[0], 550-MARGIN[1], starting_angle=90)
+    hermes = Robot(615+MARGIN[0], 550-MARGIN[1], starting_angle=89)
     clock = pygame.time.Clock()
     running = True
 
-    prevError = 0
-    errorSum = 0
+    prev_error = 0
+    error_sum = 0
 
     while running:
         screen.fill("black")
@@ -43,17 +44,28 @@ def main() -> None:
         hermes.draw(screen)
         pygame.display.flip()
 
-
-        error = CalcError(hermes, map_loader)
-        speed = 60
+        speed = 120
         Kp = 20
-        Kd = 3
-        Ki = 0.1
+        Kd = 22
+        Ki = 0.05
 
-        errorDiff = Kp - prevError
-        prevError = Kp
-        errorSum += error
-        correction = error * Kp + errorDiff * Kd + errorSum * Ki
+        
+        error = calc_error(hermes, map_loader)
+        if(not on_the_line(hermes, map_loader)): 
+            if prev_error > 0: error = 8
+            elif prev_error < 0: error = -8
+            else: error = 0
+
+            print("off the line ", error_sum)
+
+        print(error)
+        error_diff = error - prev_error
+        error_sum += error
+        error_sum = max(-100, min(error_sum, 100))
+            
+
+        correction = (error * Kp) + (error_diff * Kd) + (error_sum * Ki)
+        prev_error = error
 
         hermes.move(correction , speed, 1/FPS)
 
