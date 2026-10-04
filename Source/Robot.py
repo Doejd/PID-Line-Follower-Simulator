@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Optional
 from Sensor import Sensor
 from MapLoader import MapLoader
-from config import ROBOT_WIDTH, WHEEL_BASE, ROBOT_HEIGHT
-from config import RED, SENSOR_RADIUS
+from config import ROBOT_WIDTH, WHEEL_BASE, ROBOT_HEIGHT, RED, SENSOR_RADIUS
 
 class Robot:
     def __init__(self, x: float, y: float, number_of_sensors: int = 16, image_path: Optional[str] = None, starting_angle: float = 0):
@@ -109,9 +108,7 @@ class Robot:
         rotated_surface = pygame.transform.rotate(self.image, self.angle)
         rect = rotated_surface.get_rect(center=center)
         surface.blit(rotated_surface, rect.topleft)
-
+        
         if draw_sensors:
             for sensor in self.sensors:
                 sensor.draw(surface)
-        
-        
