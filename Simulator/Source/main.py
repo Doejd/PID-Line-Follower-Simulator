@@ -7,12 +7,17 @@ from Robot import Robot
 black = (0, 0, 0, 255)
 weights = [7.5 - i for i in range(16)]
 
-def calc_error(hermes : Robot, map_loader : MapLoader) -> int:
+def calc_error(hermes : Robot, map_loader : MapLoader) -> float | int:
     sensor_colors = hermes.get_sensors_output(map_loader)
     return sum(weights[i] * (sensor_colors[i] == black) for i in range(16))
 
 def on_the_line(hermes : Robot, map_loader : MapLoader) -> bool:
     return any(color == black for color in hermes.get_sensors_output(map_loader))
+
+def clamp_error(prev_error: float | int) -> float | int:
+    if prev_error == 0:
+        return 0
+    return min(8, max(prev_error, -8))
 
 def main() -> None:
     pygame.init()
@@ -42,18 +47,15 @@ def main() -> None:
         hermes.draw(screen)
         pygame.display.flip()
 
-        speed = 120
+        speed = 250
         Kp = 20
         Kd = 22
         Ki = 0.05
 
         
         error = calc_error(hermes, map_loader)
-        if(not on_the_line(hermes, map_loader)): 
-            if prev_error > 0: error = 8
-            elif prev_error < 0: error = -8
-            else: error = 0
-
+        if not on_the_line(hermes, map_loader):
+            clamp_error(prev_error)
             print("off the line ", error_sum)
 
         print(error)
