@@ -1,8 +1,6 @@
 import pygame
 import sys
-
-from config import MARGIN
-from config import FPS, SCREEN_SIZE
+from config import FPS, SCREEN_SIZE, MARGIN
 from MapLoader import MapLoader
 from Robot import Robot
 
@@ -20,7 +18,7 @@ def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode(SCREEN_SIZE)
     map_loader: MapLoader = MapLoader()
-    hermes = Robot(615+MARGIN[0], 550-MARGIN[1], starting_angle=89)
+    hermes = Robot(410+MARGIN[0], 550-MARGIN[1], starting_angle=90)
     clock = pygame.time.Clock()
     running = True
 
@@ -72,7 +70,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-    

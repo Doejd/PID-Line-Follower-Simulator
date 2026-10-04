@@ -8,11 +8,11 @@ class MapLoader:
         dir_path = Path(__file__).resolve().parent.parent / "map_resources"
         self.directory = dir_path
         self.map_image = self.open_image_map(filename)
-
+        
     def open_image_map(self, filename: Optional[str] = None) -> pygame.Surface:
         if not self.directory.is_dir():
             raise FileNotFoundError("Directory not found")
-
+            
         if filename:
             target_file = self.directory / filename
             if not target_file.is_file():
