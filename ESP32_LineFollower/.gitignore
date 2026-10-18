@@ -1,4 +1,3 @@
-
 .pio/
 .pioenvs/
 .piolibdeps/
@@ -6,3 +5,4 @@
 gcc-flags.json
 .vscode/
 .idea/
+.venv/

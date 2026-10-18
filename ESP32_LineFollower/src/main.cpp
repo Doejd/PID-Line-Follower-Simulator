@@ -4,7 +4,7 @@
 #include "motors.h"
 
 void setup() {
-    // Serial.begin(115200);
+  // Serial.begin(115200);
 
   // sensorsSetup();
   motorsSetup();
@@ -12,10 +12,8 @@ void setup() {
 
 
 void loop() {
-
-
     setMotor1Speed(100);
-    setMotor2Speed(-100);
+    setMotor2Speed(100);
 
     delay(20);
 }
