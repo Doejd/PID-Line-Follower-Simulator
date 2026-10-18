@@ -1,1 +1,203 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <title>HERMES | Настройки и телеметрия</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101820;--panel:#18242e;--panel2:#202f39;--line:#30424c;--text:#f2f6f7;--muted:#a9b8bd;--accent:#55dfb0;--warn:#ffd27a;--bad:#ff8e91;font:16px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 85% 0,#1b3c3b 0,transparent 34%),var(--bg);color:var(--text)}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:12px;background:var(--accent);color:#08231b;font-weight:800;padding:12px 18px}button:hover{filter:brightness(1.08)}button:disabled{cursor:wait;opacity:.65}.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+    .wrap{width:min(1050px,calc(100% - 32px));margin:auto;padding:26px 0 56px}.header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:22px}.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:var(--accent);color:#08231b;font-weight:950;font-size:22px}.brand small{display:block;color:var(--accent);font-size:11px;letter-spacing:.17em;font-weight:850}.brand h1{font-size:23px;line-height:1.2;margin:3px 0 0;letter-spacing:-.04em}.connection{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.connection input{width:210px}.input{width:100%;min-width:0;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:#111b23;color:var(--text);outline:none}.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #55dfb01c}.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}.dot{width:8px;height:8px;border-radius:50%;background:#85949a}.online .dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}.offline .dot{background:var(--bad)}
+    nav{display:flex;gap:7px;border-bottom:1px solid var(--line);margin-bottom:20px;padding-bottom:12px}nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:9px;font-weight:700;font-size:14px}nav a:hover,nav a:focus{background:var(--panel2);color:var(--text)}.notice{display:flex;justify-content:space-between;align-items:center;gap:14px;background:#182b2d;border:1px solid #31534b;border-radius:15px;padding:15px 17px;margin-bottom:17px}.notice p{margin:0;color:#d6e6e1}.notice strong{color:var(--accent)}.section{scroll-margin-top:14px;background:linear-gradient(145deg,#1a2731,#17232c);border:1px solid var(--line);border-radius:18px;padding:21px;margin-bottom:16px;box-shadow:0 14px 40px #0002}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:17px}.section h2{font-size:18px;margin:0 0 3px;letter-spacing:-.02em}.sub{color:var(--muted);font-size:13px;margin:0}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric,.sensor{background:#111b23;border:1px solid var(--line);border-radius:12px;padding:13px}.metric small{display:block;color:var(--muted);font-size:12px}.metric strong{display:block;font-size:22px;margin-top:5px;letter-spacing:-.03em}.unit{font-size:12px;color:var(--muted);font-weight:600}.sensors{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}.sensor{text-align:center;padding:9px 5px}.sensor i{display:block;height:54px;border-radius:7px;background:linear-gradient(to top,var(--accent) var(--fill),#283944 var(--fill));margin-bottom:7px}.sensor b{font-size:11px;color:var(--muted)}.sensor span{display:block;font-weight:800;font-size:13px}.forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.field label{display:block;font-weight:800;font-size:14px;margin-bottom:5px}.help{color:var(--muted);font-size:12px;min-height:36px;margin:5px 0 0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}.message{min-height:24px;color:var(--accent);font-size:14px;margin:12px 0 0}.message.error{color:var(--bad)}.foot{font-size:12px;color:var(--muted);margin:14px 2px 0}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:760px){.header{align-items:flex-start;flex-direction:column}.connection{width:100%}.connection input{flex:1;width:100%}.metrics{grid-template-columns:repeat(2,1fr)}.sensors{grid-template-columns:repeat(4,1fr)}}@media(max-width:480px){.wrap{width:calc(100% - 20px);padding-top:17px}.section{padding:16px}.forms{grid-template-columns:1fr}.help{min-height:0}.notice{align-items:flex-start;flex-direction:column}.section-head{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="header">
+      <div class="brand"><div class="logo" aria-hidden="true">H</div><div><small>HERMES · LINE FOLLOWER</small><h1>Управление и телеметрия</h1></div></div>
+      <div class="connection">
+        <label class="sr-only" for="robotAddress">Мрежов адрес на робота</label>
+        <input class="input" id="robotAddress" inputmode="url" placeholder="IP адрес, напр. 192.168.1.42">
+        <button id="connect">Свържи</button>
+        <span id="status" class="badge"><i class="dot"></i><span>Не е свързан</span></span>
+      </div>
+    </header>
+
+    <nav aria-label="Основна навигация"><a href="#overview">Показания</a><a href="#settings">Настройки</a></nav>
+
+    <div class="notice"><p><strong>Настройките се изпращат само при натискане на бутона.</strong><br>Включи живото наблюдение, когато искаш да покажеш как роботът се справя.</p><div class="actions" style="margin:0"><button class="secondary" id="liveToggle" type="button" aria-pressed="false">Започни живо наблюдение</button><button class="secondary" id="refresh" type="button">Обнови сега</button></div></div>
+
+    <section class="section" id="overview">
+      <div class="section-head"><div><h2>Показания на робота</h2><p class="sub">Последните данни, получени при свързване или ръчно обновяване.</p></div><span class="badge" id="updated">Все още няма данни</span></div>
+      <div class="metrics">
+        <div class="metric"><small>Грешка на линията</small><strong id="error">—</strong></div>
+        <div class="metric"><small>Време за цикъл</small><strong><span id="loopTime">—</span> <span class="unit">µs</span></strong></div>
+        <div class="metric"><small>Wi-Fi сигнал</small><strong><span id="rssi">—</span> <span class="unit">dBm</span></strong></div>
+        <div class="metric"><small>Работна памет</small><strong><span id="heap">—</span> <span class="unit">KB</span></strong></div>
+      </div>
+      <div class="section-head" style="margin:22px 0 12px"><div><h2>Сензори за линия</h2><p class="sub">16 канала · числото показва суровата стойност от сензора.</p></div></div>
+      <div class="sensors" id="sensors" aria-live="polite"></div>
+      <p class="foot">Команди към моторите: M1 <strong id="motor1">—</strong> · M2 <strong id="motor2">—</strong>. Скоростта в cm/s и напрежението на батерията не се измерват от показаната схема.</p>
+    </section>
+
+    <section class="section" id="settings">
+      <div class="section-head"><div><h2>Настройки на робота</h2><p class="sub">Промени стойностите и натисни „Изпрати настройки“, за да ги предадеш на робота.</p></div><button class="secondary" id="readSettings">Прочети от робота</button></div>
+      <form id="settingsForm">
+        <div class="forms">
+          <div class="field"><label for="kp">Kp · реакция към отклонението</label><input class="input" id="kp" type="number" min="0" max="1000" step="0.01" required><p class="help">Колко силно алгоритъмът коригира посоката при отклонение.</p></div>
+          <div class="field"><label for="ki">Ki · натрупана корекция</label><input class="input" id="ki" type="number" min="0" max="1000" step="0.001" required><p class="help">Коригира продължително отклонение. Може да остане 0, ако алгоритъмът не я използва.</p></div>
+          <div class="field"><label for="kd">Kd · реакция на промяната</label><input class="input" id="kd" type="number" min="0" max="1000" step="0.01" required><p class="help">Влияе според това колко бързо се променя отклонението.</p></div>
+          <div class="field"><label for="baseSpeed">Основна скорост · 0–255</label><input class="input" id="baseSpeed" type="number" min="0" max="255" step="1" required><p class="help">Задава базовата команда за движение, ако алгоритъмът използва този параметър.</p></div>
+          <div class="field"><label for="maxSpeed">Максимална скорост · 0–255</label><input class="input" id="maxSpeed" type="number" min="0" max="255" step="1" required><p class="help">Ограничава максималната команда; трябва да е равна или по-висока от основната.</p></div>
+        </div>
+        <div class="actions"><button id="sendSettings" type="submit">Изпрати настройки</button><button class="secondary" id="resetForm" type="button">Отмени промените</button></div>
+        <p class="message" id="message" role="status" aria-live="polite"></p>
+      </form>
+      <p class="foot">Таблото изпраща стойности, но не управлява мотора и не изчислява PID. Промените влияят на движението само ако кодът на алгоритъма прочита тези настройки. Стойностите се пазят в паметта на робота и се нулират при рестарт.</p>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const settingIds = ['kp', 'ki', 'kd', 'baseSpeed', 'maxSpeed'];
+    let settingsChanged = false;
+    let liveMode = false;
+    let liveTimer = null;
+    const LIVE_INTERVAL_MS = 500;
+    const address = () => {
+      let value = $('robotAddress').value.trim().replace(/\/$/, '');
+      if (value && !/^https?:\/\//i.test(value)) {
+        value = `http://${value}`;
+      }
+      return value;
+    };
+    const showMessage = (text, isError = false) => {
+      $('message').textContent = text;
+      $('message').classList.toggle('error', isError);
+    };
+    const settingPayload = () => ({
+      kp: Number($('kp').value), ki: Number($('ki').value), kd: Number($('kd').value),
+      baseSpeed: Number($('baseSpeed').value), maxSpeed: Number($('maxSpeed').value)
+    });
+    function putSettings(data) {
+      settingIds.forEach((key) => {
+        if (data[key] !== undefined) {
+          $(key).value = data[key];
+        }
+      });
+    }
+    async function api(path, options = {}) {
+      const root = address();
+      if (!root) {
+        throw new Error('Въведи IP адреса на робота.');
+      }
+      const response = await fetch(`${root}${path}`, { cache: 'no-store', ...options });
+      let data;
+      try { data = await response.json(); } catch { data = {}; }
+      if (!response.ok) {
+        throw new Error(data.error || `Заявката не беше приета (${response.status}).`);
+      }
+      return data;
+    }
+    function drawSensors(values, raw) {
+      $('sensors').innerHTML = Array.from({ length: 16 }, (_, index) => {
+        const normalized = values?.[index] == null ? 0 : Math.max(0, Math.min(1000, Number(values[index])));
+        const reading = raw?.[index] == null ? '—' : Number(raw[index]);
+        return `<div class="sensor" title="Сурово показание: ${reading}"><i style="--fill:${normalized / 10}%"></i><b>СЕНЗОР ${String(index + 1).padStart(2, '0')}</b><span>${reading}</span></div>`;
+      }).join('');
+    }
+    function renderTelemetry(data) {
+      $('error').textContent = data.lineError == null ? '—' : Number(data.lineError).toFixed(2);
+      $('loopTime').textContent = data.controlLoopUs ?? '—';
+      $('rssi').textContent = data.wifiRssi ?? '—';
+      $('heap').textContent = data.freeHeap == null ? '—' : Math.round(Number(data.freeHeap) / 1024);
+      $('motor1').textContent = data.motor1Command ?? '—';
+      $('motor2').textContent = data.motor2Command ?? '—';
+      drawSensors(data.sensors, data.rawSensors);
+      if (data.settings && !settingsChanged) {
+        putSettings(data.settings);
+      }
+      $('updated').textContent = `Обновено в ${new Date().toLocaleTimeString('bg-BG')}`;
+    }
+    async function refreshTelemetry(showResult = true) {
+      try {
+        renderTelemetry(await api('/api/telemetry'));
+        $('status').className = 'badge online';
+        $('status').lastElementChild.textContent = 'Свързан';
+        if (showResult) {
+          showMessage('Показанията са обновени.');
+        }
+      } catch (error) {
+        $('status').className = 'badge offline';
+        $('status').lastElementChild.textContent = 'Няма връзка';
+        if (showResult) {
+          showMessage(error.message, true);
+        }
+      }
+    }
+    async function pollTelemetry() {
+      if (!liveMode) {
+        return;
+      }
+      await refreshTelemetry(false);
+      if (liveMode) {
+        liveTimer = setTimeout(pollTelemetry, LIVE_INTERVAL_MS);
+      }
+    }
+    async function readSettings() {
+      try {
+        putSettings(await api('/api/settings'));
+        settingsChanged = false;
+        showMessage('Настройките от робота са заредени.');
+      }
+      catch (error) { showMessage(error.message, true); }
+    }
+    settingIds.forEach((id) => $(id).addEventListener('input', () => { settingsChanged = true; }));
+    $('connect').addEventListener('click', refreshTelemetry);
+    $('refresh').addEventListener('click', refreshTelemetry);
+    $('liveToggle').addEventListener('click', () => {
+      if (!liveMode && !address()) {
+        showMessage('Въведи IP адреса на робота, преди да включиш живото наблюдение.', true);
+        return;
+      }
+      liveMode = !liveMode;
+      $('liveToggle').setAttribute('aria-pressed', String(liveMode));
+      $('liveToggle').textContent = liveMode ? 'Спри живото наблюдение' : 'Започни живо наблюдение';
+      if (liveMode) {
+        showMessage('Живото наблюдение е включено. Настройките пак се изпращат отделно.');
+        pollTelemetry();
+      } else {
+        clearTimeout(liveTimer);
+        liveTimer = null;
+        showMessage('Живото наблюдение е спряно.');
+      }
+    });
+    $('readSettings').addEventListener('click', readSettings);
+    $('resetForm').addEventListener('click', readSettings);
+    $('settingsForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!$('settingsForm').reportValidity()) {
+        return;
+      }
+      const values = settingPayload();
+      if (values.baseSpeed > values.maxSpeed) {
+        showMessage('Максималната скорост трябва да е равна или по-висока от основната.', true);
+        return;
+      }
+      $('sendSettings').disabled = true;
+      showMessage('Изпращане на настройките…');
+      try {
+        putSettings(await api('/api/settings', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values)
+        }));
+        settingsChanged = false;
+        showMessage('Роботът прие настройките и ги потвърди.');
+      } catch (error) { showMessage(error.message, true); }
+      finally { $('sendSettings').disabled = false; }
+    });
+    drawSensors([], []);
+  </script>
+</body>
+</html>
 
