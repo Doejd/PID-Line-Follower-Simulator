@@ -19,13 +19,13 @@ void brake(int in1, int in2) {
     digitalWrite(in1, HIGH);
     digitalWrite(in2, HIGH);
 }
-void moveForward(int speed, int in1, int in2) {
-    analogWrite(in1, 255 - speed);
-    digitalWrite(in2, HIGH);
-}
-void moveBackward(int speed, int in1, int in2) { // speed > 0
+void moveForward(int speed, int in1, int in2) { 
     digitalWrite(in1, HIGH);
     analogWrite(in2, 255 - speed);
+}
+void moveBackward(int speed, int in1, int in2) { // speed > 0
+    analogWrite(in1, 255 - speed);
+    digitalWrite(in2, HIGH);
 }
 
 void writeToMotor(int speed, int in1,int in2) {
