@@ -11,11 +11,19 @@ void setup() {
 }
 
 
-void loop() {
 
+
+void loop() {
+    // readSensorValues();
+
+    // for (int i = 0; i < 16; i++) {
+    //   Serial.print(sensorValues[i]);
+    //   Serial.print("\t");
+    // }
+    // Serial.println();
 
     setMotor1Speed(100);
-    setMotor2Speed(-100);
+    setMotor2Speed(100);
 
     delay(20);
 }
