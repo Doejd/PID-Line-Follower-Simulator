@@ -12,10 +12,8 @@ void setup() {
 
 
 void loop() {
-
-
     setMotor1Speed(100);
-    setMotor2Speed(-100);
+    setMotor2Speed(100);
 
     delay(20);
 }
