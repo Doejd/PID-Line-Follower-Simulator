@@ -7,7 +7,7 @@ const int BIN1 = 6; //(Pin 6)
 const int BIN2 = 7; //(Pin 7)
 
 
-void motorsSetup(){
+void motorsSetup() {
     pinMode(AIN1, OUTPUT);
     pinMode(AIN2, OUTPUT);
     pinMode(BIN1, OUTPUT);
