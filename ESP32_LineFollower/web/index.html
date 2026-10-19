@@ -30,7 +30,7 @@
     <div class="notice"><p><strong>Настройките се изпращат само при натискане на бутона.</strong><br>Включи живото наблюдение, когато искаш да покажеш как роботът се справя.</p><div class="actions" style="margin:0"><button class="secondary" id="liveToggle" type="button" aria-pressed="false">Започни живо наблюдение</button><button class="secondary" id="refresh" type="button">Обнови сега</button></div></div>
 
     <section class="section" id="overview">
-      <div class="section-head"><div><h2>Показания на робота</h2><p class="sub">Последните данни, получени при свързване или ръчно обновяване.</p></div><span class="badge" id="updated">Все още няма данни</span></div>
+      <div class="section-head"><div><h2>Показания на робота</h2><p class="sub">Последните данни, получени при свързване или ръчно обновяване.</p><span class="badge" id="sensorFreshness">Няма сензорни данни</span></div><span class="badge" id="updated">Все още няма връзка</span></div>
       <div class="metrics">
         <div class="metric"><small>Грешка на линията</small><strong id="error">—</strong></div>
         <div class="metric"><small>Време за цикъл</small><strong><span id="loopTime">—</span> <span class="unit">µs</span></strong></div>
@@ -39,7 +39,7 @@
       </div>
       <div class="section-head" style="margin:22px 0 12px"><div><h2>Сензори за линия</h2><p class="sub">16 канала · числото показва суровата стойност от сензора.</p></div></div>
       <div class="sensors" id="sensors" aria-live="polite"></div>
-      <p class="foot">Команди към моторите: M1 <strong id="motor1">—</strong> · M2 <strong id="motor2">—</strong>. Скоростта в cm/s и напрежението на батерията не се измерват от показаната схема.</p>
+      <p class="foot">Задание към моторите (не измерена скорост): M1 <strong id="motor1">—</strong> · M2 <strong id="motor2">—</strong>. Скоростта в cm/s и напрежението на батерията не се измерват от показаната схема.</p>
     </section>
 
     <section class="section" id="settings">
@@ -64,7 +64,9 @@
     let settingsChanged = false;
     let liveMode = false;
     let liveTimer = null;
+    let hasTelemetry = false;
     const LIVE_INTERVAL_MS = 500;
+    let pollDelayMs = LIVE_INTERVAL_MS;
     const address = () => {
       let value = $('robotAddress').value.trim().replace(/\/$/, '');
       if (value && !/^https?:\/\//i.test(value)) {
@@ -76,6 +78,10 @@
       $('message').textContent = text;
       $('message').classList.toggle('error', isError);
     };
+    function setConnectionStatus(connected) {
+      $('status').className = connected ? 'badge online' : 'badge offline';
+      $('status').lastElementChild.textContent = connected ? 'Свързан' : 'Няма връзка';
+    }
     const settingPayload = () => ({
       kp: Number($('kp').value), ki: Number($('ki').value), kd: Number($('kd').value),
       baseSpeed: Number($('baseSpeed').value), maxSpeed: Number($('maxSpeed').value)
@@ -92,9 +98,18 @@
       if (!root) {
         throw new Error('Въведи IP адреса на робота.');
       }
-      const response = await fetch(`${root}${path}`, { cache: 'no-store', ...options });
+      let response;
+      try {
+        response = await fetch(`${root}${path}`, { cache: 'no-store', ...options });
+      } catch {
+        throw new Error('Няма връзка. Провери IP адреса, общата Wi‑Fi мрежа и разрешението на браузъра за локална мрежа.');
+      }
       let data;
-      try { data = await response.json(); } catch { data = {}; }
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error('Роботът върна отговор, който не е валиден JSON.');
+      }
       if (!response.ok) {
         throw new Error(data.error || `Заявката не беше приета (${response.status}).`);
       }
@@ -108,12 +123,25 @@
       }).join('');
     }
     function renderTelemetry(data) {
+      hasTelemetry = true;
       $('error').textContent = data.lineError == null ? '—' : Number(data.lineError).toFixed(2);
       $('loopTime').textContent = data.controlLoopUs ?? '—';
       $('rssi').textContent = data.wifiRssi ?? '—';
       $('heap').textContent = data.freeHeap == null ? '—' : Math.round(Number(data.freeHeap) / 1024);
       $('motor1').textContent = data.motor1Command ?? '—';
       $('motor2').textContent = data.motor2Command ?? '—';
+      const sensorAge = data.sensorAgeMs;
+      if (sensorAge == null) {
+        $('sensorFreshness').className = 'badge offline';
+        $('sensorFreshness').textContent = 'Няма сензорни данни';
+      } else {
+        const stale = Number(sensorAge) > 1500;
+        const sequence = data.sensorSequence == null ? '' : ` · № ${data.sensorSequence}`;
+        $('sensorFreshness').className = stale ? 'badge offline' : 'badge online';
+        $('sensorFreshness').textContent = stale
+          ? `Остарели данни · ${sensorAge} ms${sequence}`
+          : `Актуални данни · ${sensorAge} ms${sequence}`;
+      }
       drawSensors(data.sensors, data.rawSensors);
       if (data.settings && !settingsChanged) {
         putSettings(data.settings);
@@ -123,35 +151,47 @@
     async function refreshTelemetry(showResult = true) {
       try {
         renderTelemetry(await api('/api/telemetry'));
-        $('status').className = 'badge online';
-        $('status').lastElementChild.textContent = 'Свързан';
+        setConnectionStatus(true);
         if (showResult) {
           showMessage('Показанията са обновени.');
         }
+        return true;
       } catch (error) {
-        $('status').className = 'badge offline';
-        $('status').lastElementChild.textContent = 'Няма връзка';
+        setConnectionStatus(false);
+        $('sensorFreshness').className = 'badge offline';
+        $('sensorFreshness').textContent = hasTelemetry
+          ? 'Връзката прекъсна · показани са последните данни'
+          : 'Няма сензорни данни';
+        $('updated').textContent = 'Няма нов отговор от робота';
         if (showResult) {
           showMessage(error.message, true);
         }
+        return false;
       }
     }
     async function pollTelemetry() {
       if (!liveMode) {
         return;
       }
-      await refreshTelemetry(false);
+      const succeeded = await refreshTelemetry(false);
       if (liveMode) {
-        liveTimer = setTimeout(pollTelemetry, LIVE_INTERVAL_MS);
+        pollDelayMs = succeeded
+          ? LIVE_INTERVAL_MS
+          : Math.min(pollDelayMs * 2, 5000);
+        liveTimer = setTimeout(pollTelemetry, pollDelayMs);
       }
     }
     async function readSettings() {
       try {
         putSettings(await api('/api/settings'));
         settingsChanged = false;
+        setConnectionStatus(true);
         showMessage('Настройките от робота са заредени.');
       }
-      catch (error) { showMessage(error.message, true); }
+      catch (error) {
+        setConnectionStatus(false);
+        showMessage(error.message, true);
+      }
     }
     settingIds.forEach((id) => $(id).addEventListener('input', () => { settingsChanged = true; }));
     $('connect').addEventListener('click', refreshTelemetry);
@@ -165,6 +205,7 @@
       $('liveToggle').setAttribute('aria-pressed', String(liveMode));
       $('liveToggle').textContent = liveMode ? 'Спри живото наблюдение' : 'Започни живо наблюдение';
       if (liveMode) {
+        pollDelayMs = LIVE_INTERVAL_MS;
         showMessage('Живото наблюдение е включено. Настройките пак се изпращат отделно.');
         pollTelemetry();
       } else {
@@ -192,12 +233,17 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values)
         }));
         settingsChanged = false;
+        setConnectionStatus(true);
         showMessage('Роботът прие настройките и ги потвърди.');
-      } catch (error) { showMessage(error.message, true); }
+      } catch (error) {
+        setConnectionStatus(false);
+        showMessage(error.message, true);
+      }
       finally { $('sendSettings').disabled = false; }
     });
     drawSensors([], []);
   </script>
 </body>
 </html>
+
 
