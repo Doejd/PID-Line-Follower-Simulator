@@ -6,6 +6,7 @@ const int AIN2 = 2; //(Pin 2)
 const int BIN1 = 6; //(Pin 6)
 const int BIN2 = 7; //(Pin 7)
 
+const int MAX_SPEED = 255;
 
 void motorsSetup() {
     pinMode(AIN1, OUTPUT);
@@ -19,6 +20,7 @@ void brake(int in1, int in2) {
     digitalWrite(in1, HIGH);
     digitalWrite(in2, HIGH);
 }
+
 void moveForward(int speed, int in1, int in2) { 
     digitalWrite(in1, HIGH);
     analogWrite(in2, 255 - speed);
@@ -40,4 +42,18 @@ void setMotor1Speed(int speed) {
 }
 void setMotor2Speed(int speed) {
     writeToMotor(speed, BIN1, BIN2);
+}
+// positive value = turn right (assuming motor 1 is right and 2 is left)
+void steer(int defaultSpeed, int steeringValue){
+    int speedDiff = abs(steeringValue);
+
+    if(defaultSpeed + 2 * speedDiff > MAX_SPEED){
+        Serial.println("Invalid steering values!!!");
+        return;
+    }
+    if(defaultSpeed + speedDiff > MAX_SPEED) defaultSpeed = MAX_SPEED - speedDiff;
+    if(defaultSpeed - speedDiff < 0) defaultSpeed = 0 + speedDiff;
+
+    setMotor1Speed(defaultSpeed - steeringValue);
+    setMotor2Speed(defaultSpeed + steeringValue);
 }
