@@ -1,21 +1,225 @@
 #include "telemetry_api.h"
-#include <WiFi.h>
-#include <WebServer.h>
-#include <math.h>
-#include <stdlib.h>
 
+#include <ArduinoJson.h>
+#include <WebServer.h>
+#include <WiFi.h>
+#include <math.h>
+
+// These objects are shared with the existing main program.
 RobotSettings robotSettings;
 TelemetryData telemetryData;
 
-static WebServer server(80);
-static bool serverStarted = false;
+namespace {
+
+constexpr size_t MAX_SETTINGS_BODY_BYTES = 256;
+// Temporary interface limit only; the PID team must set a tested gain range.
+constexpr float MAX_PID_GAIN = 1000.0f;
+constexpr int MAX_PWM_COMMAND = 255;
+
+WebServer server(80);
+bool serverStarted = false;
+
+void addCorsHeaders() {
+  // Required because the browser page is stored/opened separately from the API.
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+void sendJsonError(int statusCode, const char* message) {
+  JsonDocument response;
+  response["error"] = message;
+
+  String body;
+  body.reserve(128);
+  serializeJson(response, body);
+
+  addCorsHeaders();
+  server.send(statusCode, "application/json", body);
+}
+
+void handleOptions() {
+  addCorsHeaders();
+  server.send(20);
+}
+
+bool readJsonNumber(JsonObjectConst object, const char* key, float& result) {
+  JsonVariantConst value = object[key];
+
+  // Do not accept missing values, strings, booleans, arrays, or objects.
+  if (value.isNull() || value.is<bool>() || value.is<const char*>() ||
+      value.is<JsonArrayConst>() || value.is<JsonObjectConst>() ||
+      !value.is<float>()) {
+    return false;
+  }
+
+  result = value.as<float>();
+  return isfinite(result);
+}
+
+void writeSettings(JsonObject settings) {
+  settings["kp"] = robotSettings.kp;
+  settings["ki"] = robotSettings.ki;
+  settings["kd"] = robotSettings.kd;
+  settings["baseSpeed"] = robotSettings.baseSpeed;
+  settings["maxSpeed"] = robotSettings.maxSpeed;
+}
+
+String settingsJson() {
+  JsonDocument response;
+  writeSettings(response.to<JsonObject>());
+
+  String body;
+  body.reserve(128);
+  serializeJson(response, body);
+  return body;
+}
+
+void handleGetSettings() {
+  addCorsHeaders();
+  server.send(200, "application/json", settingsJson());
+}
+
+void handlePostSettings() {
+  const String body = server.arg("plain");
+
+  if (body.length() == 0 || body.length() > MAX_SETTINGS_BODY_BYTES) {
+    sendJsonError(400, "Settings request is empty or too large.");
+    return;
+  }
+
+  JsonDocument request;
+  const DeserializationError parseError = deserializeJson(
+      request, body, DeserializationOption::NestingLimit(2));
+  if (parseError) {
+    sendJsonError(400, "Settings must be a valid JSON object.");
+    return;
+  }
+
+  const JsonObjectConst settings = request.as<JsonObjectConst>();
+  if (settings.isNull()) {
+    sendJsonError(400, "Settings must be a JSON object.");
+    return;
+  }
+
+  float kp = 0;
+  float ki = 0;
+  float kd = 0;
+  float baseSpeed = 0;
+  float maxSpeed = 0;
+
+  const bool hasAllNumbers = readJsonNumber(settings, "kp", kp) &&
+                             readJsonNumber(settings, "ki", ki) &&
+                             readJsonNumber(settings, "kd", kd) &&
+                             readJsonNumber(settings, "baseSpeed", baseSpeed) &&
+                             readJsonNumber(settings, "maxSpeed", maxSpeed);
+  if (!hasAllNumbers) {
+    sendJsonError(400, "Expected numeric kp, ki, kd, baseSpeed, and maxSpeed.");
+    return;
+  }
+
+  const bool gainsInRange = kp >= 0 && kp <= MAX_PID_GAIN &&
+                            ki >= 0 && ki <= MAX_PID_GAIN &&
+                            kd >= 0 && kd <= MAX_PID_GAIN;
+  const bool speedsInRange = baseSpeed >= 0 && baseSpeed <= MAX_PWM_COMMAND &&
+                             maxSpeed >= 0 && maxSpeed <= MAX_PWM_COMMAND &&
+                             floorf(baseSpeed) == baseSpeed &&
+                             floorf(maxSpeed) == maxSpeed &&
+                             baseSpeed <= maxSpeed;
+  if (!gainsInRange || !speedsInRange) {
+    sendJsonError(422, "Values are outside the allowed gain or speed ranges.");
+    return;
+  }
+
+  // Validate the full request first, then replace the settings together.
+  RobotSettings updatedSettings;
+  updatedSettings.kp = kp;
+  updatedSettings.ki = ki;
+  updatedSettings.kd = kd;
+  updatedSettings.baseSpeed = static_cast<int>(baseSpeed);
+  updatedSettings.maxSpeed = static_cast<int>(maxSpeed);
+  robotSettings = updatedSettings;
+
+  addCorsHeaders();
+  server.send(200, "application/json", settingsJson());
+}
+
+void handleGetTelemetry() {
+  JsonDocument response;
+  JsonArray sensors = response["sensors"].to<JsonArray>();
+  JsonArray rawSensors = response["rawSensors"].to<JsonArray>();
+
+  for (int i = 0; i < 16; i++) {
+    if (telemetryData.hasSensors) {
+      sensors.add(telemetryData.sensors[i]);
+      rawSensors.add(telemetryData.rawSensors[i]);
+    } else {
+      sensors.add(nullptr);
+      rawSensors.add(nullptr);
+    }
+  }
+
+  if (telemetryData.hasSensors) {
+    response["sensorSequence"] = telemetryData.sensorSequence;
+    response["sensorAgeMs"] = millis() - telemetryData.lastSensorUpdateMs;
+  } else {
+    response["sensorSequence"] = nullptr;
+    response["sensorAgeMs"] = nullptr;
+  }
+
+  if (telemetryData.hasLineError) {
+    response["lineError"] = telemetryData.lineError;
+  } else {
+    response["lineError"] = nullptr;
+  }
+  if (telemetryData.hasMotorValues) {
+    response["motor1Command"] = telemetryData.motor1;
+    response["motor2Command"] = telemetryData.motor2;
+  } else {
+    response["motor1Command"] = nullptr;
+    response["motor2Command"] = nullptr;
+  }
+
+  response["elapsedMs"] = millis();
+  if (telemetryData.hasControlLoopTime) {
+    response["controlLoopUs"] = telemetryData.controlLoopUs;
+  } else {
+    response["controlLoopUs"] = nullptr;
+  }
+
+  const bool wifiConnected = WiFi.status() == WL_CONNECTED;
+  response["wifiConnected"] = wifiConnected;
+  if (wifiConnected) {
+    response["wifiRssi"] = WiFi.RSSI();
+  } else {
+    response["wifiRssi"] = nullptr;
+  }
+  response["freeHeap"] = ESP.getFreeHeap();
+  response["speedCmS"] = nullptr;
+  response["batteryV"] = nullptr;
+
+  JsonObject settings = response["settings"].to<JsonObject>();
+  writeSettings(settings);
+
+  String body;
+  body.reserve(512);
+  serializeJson(response, body);
+
+  addCorsHeaders();
+  server.send(200, "application/json", body);
+}
+
+}  // namespace
 
 void publishSensorValues(const uint16_t raw[16]) {
   for (int i = 0; i < 16; i++) {
     telemetryData.rawSensors[i] = raw[i];
     telemetryData.sensors[i] = constrain((raw[i] * 1000L) / 4095, 0, 1000);
   }
+
   telemetryData.hasSensors = true;
+  telemetryData.sensorSequence++;
+  telemetryData.lastSensorUpdateMs = millis();
 }
 
 void publishMotorCommands(int motor1, int motor2) {
@@ -31,115 +235,14 @@ void publishLineError(float error) {
 
 void publishControlLoopTime(unsigned long elapsedUs) {
   telemetryData.controlLoopUs = elapsedUs;
-}
-
-static void addCorsHeaders() {
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
-}
-
-static void handleOptions() {
-  addCorsHeaders();
-  server.send(204);
-}
-
-static bool readJsonNumber(const String& body, const char* key, float& result) {
-  String token = String("\"") + key + "\"";
-  int start = body.indexOf(token);
-  if (start < 0) return false;
-  start = body.indexOf(':', start + token.length());
-  if (start < 0) return false;
-  start++;
-  while (start < body.length() && isspace(body[start])) start++;
-
-  int end = start;
-  while (end < body.length()) {
-    char c = body[end];
-    if (!(isDigit(c) || c == '-' || c == '+' || c == '.' || c == 'e' || c == 'E')) break;
-    end++;
-  }
-  if (end == start) return false;
-
-  String value = body.substring(start, end);
-  char* parsedEnd = nullptr;
-  result = strtof(value.c_str(), &parsedEnd);
-  return parsedEnd != value.c_str() && *parsedEnd == '\0' && isfinite(result);
-}
-
-static String settingsJson() {
-  return String("{\"kp\":") + String(robotSettings.kp, 4) +
-         ",\"ki\":" + String(robotSettings.ki, 4) +
-         ",\"kd\":" + String(robotSettings.kd, 4) +
-         ",\"baseSpeed\":" + robotSettings.baseSpeed +
-         ",\"maxSpeed\":" + robotSettings.maxSpeed + "}";
-}
-
-static void handleGetSettings() {
-  addCorsHeaders();
-  server.send(200, "application/json", settingsJson());
-}
-
-static void handlePostSettings() {
-  String body = server.arg("plain");
-  float kp = robotSettings.kp;
-  float ki = robotSettings.ki;
-  float kd = robotSettings.kd;
-  float baseSpeed = robotSettings.baseSpeed;
-  float maxSpeed = robotSettings.maxSpeed;
-
-  bool valid = readJsonNumber(body, "kp", kp) &&
-               readJsonNumber(body, "ki", ki) &&
-               readJsonNumber(body, "kd", kd) &&
-               readJsonNumber(body, "baseSpeed", baseSpeed) &&
-               readJsonNumber(body, "maxSpeed", maxSpeed);
-  if (!valid) {
-    addCorsHeaders();
-    server.send(400, "application/json", "{\"error\":\"Expected kp, ki, kd, baseSpeed, maxSpeed\"}");
-    return;
-  }
-
-  robotSettings.kp = constrain(kp, 0.0f, 1000.0f);
-  robotSettings.ki = constrain(ki, 0.0f, 1000.0f);
-  robotSettings.kd = constrain(kd, 0.0f, 1000.0f);
-  robotSettings.baseSpeed = constrain((int)baseSpeed, 0, 255);
-  robotSettings.maxSpeed = constrain((int)maxSpeed, 0, 255);
-
-  addCorsHeaders();
-  server.send(200, "application/json", settingsJson()); // acknowledgement to browser
-}
-
-static void handleGetTelemetry() {
-  String json = "{\"sensors\":[";
-  for (int i = 0; i < 16; i++) {
-    if (i) json += ',';
-    json += telemetryData.hasSensors ? String(telemetryData.sensors[i]) : "null";
-  }
-  json += "],\"rawSensors\":[";
-  for (int i = 0; i < 16; i++) {
-    if (i) json += ',';
-    json += telemetryData.hasSensors ? String(telemetryData.rawSensors[i]) : "null";
-  }
-  json += "],\"lineError\":";
-  json += telemetryData.hasLineError ? String(telemetryData.lineError, 3) : "null";
-  json += ",\"motor1Command\":";
-  json += telemetryData.hasMotorValues ? String(telemetryData.motor1) : "null";
-  json += ",\"motor2Command\":";
-  json += telemetryData.hasMotorValues ? String(telemetryData.motor2) : "null";
-  json += ",\"elapsedMs\":" + String(millis());
-  json += ",\"controlLoopUs\":";
-  json += telemetryData.controlLoopUs ? String(telemetryData.controlLoopUs) : "null";
-  json += ",\"wifiRssi\":" + String(WiFi.RSSI());
-  json += ",\"freeHeap\":" + String(ESP.getFreeHeap());
-  json += ",\"speedCmS\":null,\"batteryV\":null,";
-  json += "\"settings\":" + settingsJson() + "}";
-  addCorsHeaders();
-  server.send(200, "application/json", json);
+  telemetryData.hasControlLoopTime = true;
 }
 
 void beginTelemetry(const char* ssid, const char* password) {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password); // Start connecting; do not block the robot.
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(ssid, password);
+
   server.on("/api/telemetry", HTTP_OPTIONS, handleOptions);
   server.on("/api/settings", HTTP_OPTIONS, handleOptions);
   server.on("/api/telemetry", HTTP_GET, handleGetTelemetry);
@@ -148,11 +251,25 @@ void beginTelemetry(const char* ssid, const char* password) {
 }
 
 void serviceTelemetry() {
-  if (!serverStarted && WiFi.status() == WL_CONNECTED) {
+  // Do not wait for Wi-Fi here: the control loop calls this function
+  // repeatedly, so reconnect attempts remain asynchronous.
+  if (WiFi.status() != WL_CONNECTED) {
+    if (serverStarted) {
+      server.stop();
+      serverStarted = false;
+    }
+    return;
+  }
+
+  if (!serverStarted) {
     server.begin();
     serverStarted = true;
     Serial.print("Robot IP: ");
     Serial.println(WiFi.localIP());
   }
-  if (serverStarted) server.handleClient();
+
+  if (serverStarted) {
+    server.handleClient();
+  }
 }
+
