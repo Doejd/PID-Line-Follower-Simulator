@@ -16,12 +16,15 @@ struct TelemetryData {
   int sensors[16] = {};
   uint16_t rawSensors[16] = {};
   bool hasSensors = false;
+  uint32_t sensorSequence = 0;
+  unsigned long lastSensorUpdateMs = 0;
   float lineError = 0;
   bool hasLineError = false;
   int motor1 = 0;
   int motor2 = 0;
   bool hasMotorValues = false;
   unsigned long controlLoopUs = 0;
+  bool hasControlLoopTime = false;
 };
 
 extern RobotSettings robotSettings;
