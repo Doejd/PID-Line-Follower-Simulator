@@ -12,6 +12,7 @@ constexpr int SCREEN_WIDTH = 128;
 constexpr int SCREEN_HEIGHT = 64;
 constexpr uint32_t BUTTON_DEBOUNCE_MS = 30;
 constexpr uint32_t SENSOR_REFRESH_MS = 500;
+constexpr uint32_t CALIBRATION_REFRESH_MS = 250;
 constexpr uint32_t MESSAGE_DURATION_MS = 1200;
 
 constexpr char MENU_CALIBRATE[] = "Calibrate 360";
@@ -24,6 +25,8 @@ enum class Screen : uint8_t {
   Menu,
   Sensors,
   ConfirmCalibration,
+  CalibrationRunning,
+  CalibrationResult,
   ConfirmStart,
   Message,
 };
@@ -46,6 +49,9 @@ DisplayUiAction pendingAction = DisplayUiAction::None;
 MessageKind currentMessage = MessageKind::CalibrationQueued;
 uint32_t messageUntilMs = 0;
 uint32_t lastSensorDrawMs = 0;
+uint32_t calibrationStartedAtMs = 0;
+uint32_t calibrationElapsedMs = 0;
+uint32_t lastCalibrationDrawMs = 0;
 
 const char* menuItem(uint8_t index) {
   switch (index) {
@@ -176,6 +182,31 @@ void drawMessage() {
   display.println("Firmware must handle it");
 }
 
+void drawCalibrationRunning(uint32_t now) {
+  drawHeader("CALIBRATING");
+  const uint32_t elapsedMs = now - calibrationStartedAtMs;
+  display.setCursor(0, 28);
+  display.print("Elapsed: ");
+  display.print(elapsedMs / 1000);
+  display.print('.');
+  display.print((elapsedMs % 1000) / 100);
+  display.println(" s");
+  display.setCursor(0, 48);
+  display.println("Waiting for completion");
+}
+
+void drawCalibrationResult() {
+  drawHeader("CALIBRATION DONE");
+  display.setCursor(0, 26);
+  display.print("Time: ");
+  display.print(calibrationElapsedMs / 1000);
+  display.print('.');
+  display.print((calibrationElapsedMs % 1000) / 100);
+  display.println(" s");
+  display.setCursor(0, 46);
+  display.println("B1: repeat  B2: menu");
+}
+
 void drawCurrentScreen(uint32_t now) {
   if (currentScreen == Screen::Message) {
     if (static_cast<int32_t>(messageUntilMs - now) > 0) {
@@ -192,6 +223,11 @@ void drawCurrentScreen(uint32_t now) {
   } else if (currentScreen == Screen::ConfirmCalibration) {
     drawConfirmation("CALIBRATE", "Rotate 360 degrees?",
                      "Keep the area clear.");
+  } else if (currentScreen == Screen::CalibrationRunning) {
+    drawCalibrationRunning(now);
+    lastCalibrationDrawMs = now;
+  } else if (currentScreen == Screen::CalibrationResult) {
+    drawCalibrationResult();
   } else {
     drawConfirmation("START ROBOT", "Start line following?",
                      "Confirm to begin.");
@@ -207,6 +243,14 @@ void selectMenuItem(uint32_t now) {
   } else {
     currentScreen = Screen::ConfirmStart;
   }
+  drawCurrentScreen(now);
+}
+
+void startCalibrationRequest(uint32_t now) {
+  pendingAction = DisplayUiAction::CalibrationRequested;
+  calibrationStartedAtMs = now;
+  calibrationElapsedMs = 0;
+  currentScreen = Screen::CalibrationRunning;
   drawCurrentScreen(now);
 }
 
@@ -282,8 +326,7 @@ void serviceDisplayUi() {
     }
   } else if (currentScreen == Screen::ConfirmCalibration) {
     if (button2) {
-      queueAction(DisplayUiAction::CalibrationRequested,
-                  MessageKind::CalibrationQueued, now);
+      startCalibrationRequest(now);
     } else if (button1 || button3) {
       currentScreen = Screen::Menu;
       drawCurrentScreen(now);
@@ -293,6 +336,18 @@ void serviceDisplayUi() {
       queueAction(DisplayUiAction::StartRequested, MessageKind::StartQueued,
                   now);
     } else if (button1 || button3) {
+      currentScreen = Screen::Menu;
+      drawCurrentScreen(now);
+    }
+  } else if (currentScreen == Screen::CalibrationRunning) {
+    if ((now - lastCalibrationDrawMs) >= CALIBRATION_REFRESH_MS) {
+      drawCurrentScreen(now);
+    }
+  } else if (currentScreen == Screen::CalibrationResult) {
+    if (button1) {
+      currentScreen = Screen::ConfirmCalibration;
+      drawCurrentScreen(now);
+    } else if (button2 || button3) {
       currentScreen = Screen::Menu;
       drawCurrentScreen(now);
     }
@@ -308,3 +363,15 @@ DisplayUiAction consumeDisplayUiAction() {
   pendingAction = DisplayUiAction::None;
   return action;
 }
+
+void finishCalibrationDisplay() {
+  if (!uiReady || currentScreen != Screen::CalibrationRunning) {
+    return;
+  }
+
+  const uint32_t now = millis();
+  calibrationElapsedMs = now - calibrationStartedAtMs;
+  currentScreen = Screen::CalibrationResult;
+  drawCurrentScreen(now);
+}
+
