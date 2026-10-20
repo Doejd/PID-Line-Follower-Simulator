@@ -12,6 +12,7 @@ class Timer {
         void onTimerTimeout(std::function<void()> callback) {
             if (millis() - startTime >= durationMS) {
                 callback();
+                start();
             }
         }
         void stop() {startTime = 0;}

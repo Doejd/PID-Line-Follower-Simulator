@@ -7,6 +7,7 @@
 #include "telemetry_api.h"
 #include "display_ui.h"
 
+Timer timer{200};
 
 float KP{20}, KD{22}, KI{0.05};
 float previousError{0}, errorSum{0};
@@ -35,12 +36,7 @@ constexpr DisplayUiConfig displayUiConfig{
     0x3C
 };
 
-void calibrateSensors() {
-    /*
-     * This function calibrates the sensors by reading their values multiple times while spinning and determining the minimum and maximum values.
-     * The calibration process helps in accurately interpreting the sensor readings for line detection.
-    */
-    
+void calibrateCallback() {
     for (int i{0}; i < 3; ++i) {
         readSensorValues(sensorValues);
         publishSensorValues(sensorValues.data());
@@ -50,6 +46,26 @@ void calibrateSensors() {
         
         delay(20);
     }
+}
+
+void calibrateSensors() {
+    /*
+     * This function calibrates the sensors by reading their values multiple times while spinning and 
+     * determining the minimum and maximum values.
+     * The calibration process helps in accurately interpreting the sensor readings for line detection.
+    */
+    unsigned long startTime = millis();
+    timer.start();
+    while (millis() - startTime < 3000) {
+        steer(0, 60);
+        timer.onTimerTimeout(calibrateCallback);
+
+        serviceTelemetry();
+        serviceDisplayUi();
+        handleDisplayAction();
+    }
+    
+    timer.stop();
 }
 
 bool intToBlackAndWhite(int sensorValue) {
@@ -129,11 +145,12 @@ void handleDisplayAction() {
     const DisplayUiAction action = consumeDisplayUiAction();
 
     if (action == DisplayUiAction::CalibrationRequested) {
-      Serial.println("Calibration requested");
-      calibrateSensors();
-    }else if (action == DisplayUiAction::StartRequested) {
-      Serial.println("Start requeseted");
-      //DROP FUNCTION FOR STARTING THE CALIBRATION
+        Serial.println("Calibration requested");
+        calibrateSensors();
+    }
+    else if (action == DisplayUiAction::StartRequested) {
+        Serial.println("Start requeseted");
+        //DROP FUNCTION FOR STARTING THE CALIBRATION
     }
 }
 
@@ -152,19 +169,6 @@ void setup() {
 }
 
 void loop() {
-    Timer timer{200};
-
-    while (millis() < 15000) {
-        timer.start();
-        steer(0, 60);
-        timer.onTimerTimeout(calibrateSensors);
-
-        serviceTelemetry();
-        serviceDisplayUi();
-        handleDisplayAction();
-    }
-
-    timer.stop();
 
     doPID();
 
