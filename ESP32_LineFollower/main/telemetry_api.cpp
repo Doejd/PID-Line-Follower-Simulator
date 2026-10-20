@@ -1,6 +1,7 @@
 #include "telemetry_api.h"
 
 #include <ArduinoJson.h>
+#include <LittleFS.h>
 #include <WebServer.h>
 #include <WiFi.h>
 #include <math.h>
@@ -18,12 +19,24 @@ constexpr int MAX_PWM_COMMAND = 255;
 
 WebServer server(80);
 bool serverStarted = false;
+bool dashboardFileSystemReady = false;
 
-void addCorsHeaders() {
-  // Required because the browser page is stored/opened separately from the API.
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+void handleDashboard() {
+  if (!dashboardFileSystemReady) {
+    server.send(503, "text/plain; charset=utf-8",
+                "Dashboard storage is unavailable. Upload the LittleFS image.");
+    return;
+  }
+
+  File dashboard = LittleFS.open("/index.html", "r");
+  if (!dashboard) {
+    server.send(404, "text/plain; charset=utf-8",
+                "Dashboard file /index.html was not found.");
+    return;
+  }
+
+  server.streamFile(dashboard, "text/html; charset=utf-8");
+  dashboard.close();
 }
 
 void sendJsonError(int statusCode, const char* message) {
@@ -34,13 +47,7 @@ void sendJsonError(int statusCode, const char* message) {
   body.reserve(128);
   serializeJson(response, body);
 
-  addCorsHeaders();
   server.send(statusCode, "application/json", body);
-}
-
-void handleOptions() {
-  addCorsHeaders();
-  server.send(20);
 }
 
 bool readJsonNumber(JsonObjectConst object, const char* key, float& result) {
@@ -76,7 +83,6 @@ String settingsJson() {
 }
 
 void handleGetSettings() {
-  addCorsHeaders();
   server.send(200, "application/json", settingsJson());
 }
 
@@ -140,7 +146,6 @@ void handlePostSettings() {
   updatedSettings.maxSpeed = static_cast<int>(maxSpeed);
   robotSettings = updatedSettings;
 
-  addCorsHeaders();
   server.send(200, "application/json", settingsJson());
 }
 
@@ -205,7 +210,6 @@ void handleGetTelemetry() {
   body.reserve(512);
   serializeJson(response, body);
 
-  addCorsHeaders();
   server.send(200, "application/json", body);
 }
 
@@ -239,12 +243,16 @@ void publishControlLoopTime(unsigned long elapsedUs) {
 }
 
 void beginTelemetry(const char* ssid, const char* password) {
+  dashboardFileSystemReady = LittleFS.begin(false);
+  if (!dashboardFileSystemReady) {
+    Serial.println("Dashboard LittleFS mount failed; upload the filesystem image.");
+  }
+
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid, password);
 
-  server.on("/api/telemetry", HTTP_OPTIONS, handleOptions);
-  server.on("/api/settings", HTTP_OPTIONS, handleOptions);
+  server.on("/", HTTP_GET, handleDashboard);
   server.on("/api/telemetry", HTTP_GET, handleGetTelemetry);
   server.on("/api/settings", HTTP_GET, handleGetSettings);
   server.on("/api/settings", HTTP_POST, handlePostSettings);
