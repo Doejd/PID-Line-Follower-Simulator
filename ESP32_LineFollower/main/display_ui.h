@@ -29,3 +29,7 @@ enum class DisplayUiAction : uint8_t {
 // Returns each confirmed menu action once. The main firmware passes it to the
 // algorithm team's existing calibration/start routines.
 DisplayUiAction consumeDisplayUiAction();
+
+// Call when the algorithm team's calibration routine actually finishes.
+// The display then freezes and shows the measured elapsed time.
+void finishCalibrationDisplay();
