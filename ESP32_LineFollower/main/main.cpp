@@ -130,7 +130,7 @@ void handleDisplayAction() {
 
     if (action == DisplayUiAction::CalibrationRequested) {
       Serial.println("Calibration requested");
-      //DROP CALIBRATION FUNCTION HERE
+      calibrateSensors();
     }else if (action == DisplayUiAction::StartRequested) {
       Serial.println("Start requeseted");
       //DROP FUNCTION FOR STARTING THE CALIBRATION
