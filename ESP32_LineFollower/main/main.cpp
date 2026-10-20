@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <array>
-#include <algorithm>
 #include "Timer.h"
 #include "sensors.h"
 #include "motors.h"
@@ -15,6 +14,7 @@ int sensorMin{0}, sensorMax{4096};
 //  white          black
 
 int speed{200};
+bool startPID{false};
 
 std::array<uint16_t, 16> sensorValues{};
 std::array<int16_t, 16> sensorWeights{-82, -71, -59, -46, -35, -25, -15, -5, 5,  15,  25,  35,  46,  59,  71, 82};
@@ -66,6 +66,7 @@ void calibrateSensors() {
     }
     
     timer.stop();
+    steer(0, 0);
 }
 
 bool intToBlackAndWhite(int sensorValue) {
@@ -150,7 +151,7 @@ void handleDisplayAction() {
     }
     else if (action == DisplayUiAction::StartRequested) {
         Serial.println("Start requeseted");
-        //DROP FUNCTION FOR STARTING THE CALIBRATION
+        startPID = !startPID;
     }
 }
 
@@ -170,7 +171,7 @@ void setup() {
 
 void loop() {
 
-    doPID();
+    if (startPID) doPID();
 
     serviceTelemetry();
     serviceDisplayUi();
