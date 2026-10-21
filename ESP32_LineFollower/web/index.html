@@ -34,10 +34,12 @@
         <div class="metric"><small>Време за цикъл</small><strong><span id="loopTime">—</span> <span class="unit">µs</span></strong></div>
         <div class="metric"><small>Wi-Fi сигнал</small><strong><span id="rssi">—</span> <span class="unit">dBm</span></strong></div>
         <div class="metric"><small>Работна памет</small><strong><span id="heap">—</span> <span class="unit">KB</span></strong></div>
+        <div class="metric"><small>M1 · изчислена команда</small><strong id="motor1">—</strong></div>
+        <div class="metric"><small>M2 · изчислена команда</small><strong id="motor2">—</strong></div>
       </div>
       <div class="section-head" style="margin:22px 0 12px"><div><h2>Сензори за линия</h2><p class="sub">16 канала · числото показва суровата стойност от сензора.</p></div></div>
       <div class="sensors" id="sensors" aria-live="polite"></div>
-      <p class="foot">Задание към моторите (не измерена скорост): M1 <strong id="motor1">—</strong> · M2 <strong id="motor2">—</strong>. Скоростта в cm/s и напрежението на батерията не се измерват от показаната схема.</p>
+      <p class="foot">Моторните стойности са изчислени команди, не измерена скорост. Скоростта в cm/s и напрежението на батерията не се измерват от показаната схема.</p>
     </section>
 
     <section class="section" id="settings">
