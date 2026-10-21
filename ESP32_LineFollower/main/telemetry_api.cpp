@@ -19,6 +19,7 @@ constexpr int MAX_PWM_COMMAND = 255;
 
 WebServer server(80);
 bool serverStarted = false;
+bool accessPointStarted = false;
 bool dashboardFileSystemReady = false;
 
 void handleDashboard() {
@@ -28,10 +29,10 @@ void handleDashboard() {
     return;
   }
 
-  File dashboard = LittleFS.open("/index.html", "r");
+  File dashboard = LittleFS.open("index.html", "r");
   if (!dashboard) {
     server.send(404, "text/plain; charset=utf-8",
-                "Dashboard file /index.html was not found.");
+                "Dashboard file index.html was not found.");
     return;
   }
 
@@ -247,10 +248,26 @@ void beginTelemetry(const char* ssid, const char* password) {
   if (!dashboardFileSystemReady) {
     Serial.println("Dashboard LittleFS mount failed; upload the filesystem image.");
   }
-
+  /* here i changed this dont delete
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password);*/
+
+  IPAddress localIP(192, 168, 4, 1);
+  IPAddress gateway(192, 168, 4, 1);
+  IPAddress subnet(255, 255, 255, 0);
+
+
+  WiFi.mode(WIFI_AP);
+  accessPointStarted = WiFi.softAP(ssid, password);
+
+  if (accessPointStarted) {
+    Serial.println("HERMES Wi-Fi started");
+    Serial.print("Robot IP: ");
+    Serial.println(WiFi.softAPIP());
+  }else {
+    Serial.println("ERROR: Wi-Fi AP failed");
+  }
 
   server.on("/", HTTP_GET, handleDashboard);
   server.on("/api/telemetry", HTTP_GET, handleGetTelemetry);
@@ -269,7 +286,7 @@ void serviceTelemetry() {
     return;
   }
 
-  if (!serverStarted) {
+ /*if (!serverStarted) {
     server.begin();
     serverStarted = true;
     Serial.print("Robot IP: ");
@@ -278,6 +295,20 @@ void serviceTelemetry() {
 
   if (serverStarted) {
     server.handleClient();
+  }*/
+
+  if (!accessPointStarted) {
+    return;
   }
+
+  if (!serverStarted) {
+    server.begin();
+    serverStarted = true;
+
+    Serial.print("Dashboard IP: ");
+    Serial.println(WiFi.softAPIP());
+  }
+
+  server.handleClient();
 }
 
