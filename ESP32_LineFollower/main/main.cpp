@@ -139,6 +139,8 @@ void doPID() {
     
     Serial.println(correction);
     steer(speed, correction);
+
+    publishMotorCommands(speed - correction, speed + correction);
     publishControlLoopTime(micros() - controlStartUs);
 }
 
