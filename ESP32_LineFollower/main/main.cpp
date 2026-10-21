@@ -1,12 +1,9 @@
 #include <Arduino.h>
 #include <array>
-#include "Timer.h"
 #include "sensors.h"
 #include "motors.h"
 #include "telemetry_api.h"
 #include "display_ui.h"
-
-Timer timer{200};
 
 float KP{20}, KD{22}, KI{0.05};
 float previousError{0}, errorSum{0};
@@ -55,17 +52,21 @@ void calibrateSensors() {
      * The calibration process helps in accurately interpreting the sensor readings for line detection.
     */
     unsigned long startTime = millis();
-    timer.start();
+    setMotor1Speed(-100);
+    setMotor2Speed(100);
     while (millis() - startTime < 3000) {
-        steer(0, 60);
-        timer.onTimerTimeout(calibrateCallback);
+
+        calibrateCallback();
+        delay(50);
 
         serviceTelemetry();
         serviceDisplayUi();
     }
+
     
-    timer.stop();
-    steer(0, 0);
+    setMotor1Speed(0);
+    setMotor2Speed(0);
+
     finishCalibrationDisplay();
 }
 
@@ -162,7 +163,7 @@ void setup() {
     Serial.begin(115200);
 
     robotSettings = RobotSettings{KP, KI, KD, speed, 255};
-    beginTelemetry("WIFI_NAME", "WIFI_PASSWORD");
+    beginTelemetry("HERMES-ROBOT", "Hermes123");
 
     sensorsSetup();
     motorsSetup();

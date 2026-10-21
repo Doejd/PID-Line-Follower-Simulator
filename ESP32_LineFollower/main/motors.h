@@ -13,6 +13,11 @@ void motorsSetup() {
     pinMode(AIN2, OUTPUT);
     pinMode(BIN1, OUTPUT);
     pinMode(BIN2, OUTPUT);
+
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, HIGH);
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, HIGH);
 }
 
 // Using slow decay (fast acceleration/deceleration) -> speed needs to be inverted
