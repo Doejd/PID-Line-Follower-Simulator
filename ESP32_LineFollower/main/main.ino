@@ -46,11 +46,11 @@ void doPID(float error, bool onTheLine) {
 
     const unsigned long controlStartUs = micros();
 
-    if (!onTheLine) error = constrain(previousError, -8, 8);
+    if (!onTheLine) error = constrain(previousError, -20.0, 20.0);
     
     float errorDiff = error - previousError;
     errorSum += error;
-    errorSum = constrain(errorSum, -100, 100);
+    errorSum = constrain(errorSum, -100.0, 100.0);
     int correction = static_cast<int>((KP * error + KD * errorDiff + KI * errorSum));
     // correction = constrain(correction, -70, 70);
     previousError = error;
@@ -62,6 +62,14 @@ void doPID(float error, bool onTheLine) {
     // publishLineError(error);
     // publishMotorCommands(speed - correction, speed + correction);
     // publishControlLoopTime(micros() - controlStartUs);
+}
+// motor spinning = black line
+void testRawReading(int sensorI) {
+    uint16_t value = rawReadings[sensorI];
+    value /= 16;
+    value = 255 - value;
+    value = constrain(value, 0, 255);
+    setMotorSpeeds(value, 0);
 }
 
 
@@ -75,7 +83,7 @@ void setup() {
     sensorsSetup();
     motorsSetup();
 
-    startPID = true;
+    startPID = false;
 
     // if (!beginDisplayUi(displayUiConfig)) {
     //   Serial.println("Display initialization failed");
@@ -109,6 +117,9 @@ void loop() {
         doPID(linePos, onTheLine);
     
         if (onTheLine) Serial.println(linePos);
+    }
+    else{
+        testRawReading(8);
     }
   }
 }
