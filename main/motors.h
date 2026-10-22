@@ -37,7 +37,8 @@ void moveBackward(int speed, int in1, int in2) { // speed > 0
 
 void writeToMotor(int speed, int in1,int in2) {
     speed = constrain(speed, -255, 255);
-    if(speed >= 0) moveForward(speed, in1, in2);
+    if(speed == 0) brake(in1, in2);
+    else if(speed > 0) moveForward(speed, in1, in2);
     else moveBackward(abs(speed), in1, in2);
 }
 

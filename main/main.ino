@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <array>
-#include "Timer.h"
+#include <algorithm>
 #include "sensors.h"
 #include "motors.h"
 #include "telemetry_api.h"
@@ -8,8 +8,8 @@
 
 float KP{20}, KD{22}, KI{0.00};
 float previousError{0}, errorSum{0};
-int sensorMin{0}, sensorMax{4096};
-//  white          black
+int sensorMin{2048}, sensorMax{2048};
+//  white               black
 
 int speed{100};
 bool startPID{false};
@@ -19,11 +19,11 @@ std::array<int16_t, 16> sensorWeights{-82, -71, -59, -46, -35, -25, -15, -5, 5, 
 // std::array<int16_t, 16> sensorWeights{-8, -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8};
 
 //Not sure about GPIO of DISPLAY BUTTONS!!!!!
-constexpr uint8_t OLED_SDA_GPIO = 9;
-constexpr uint8_t OLED_SCL_GPIO = 8;
-constexpr uint8_t BUTTON_1_GPIO = 10;
-constexpr uint8_t BUTTON_2_GPIO = 11;
-constexpr uint8_t BUTTON_3_GPIO = 12;
+constexpr uint8_t OLED_SDA_GPIO = 16;
+constexpr uint8_t OLED_SCL_GPIO = 15;
+constexpr uint8_t BUTTON_1_GPIO = 17;
+constexpr uint8_t BUTTON_2_GPIO = 18;
+constexpr uint8_t BUTTON_3_GPIO = 8;
 
 constexpr DisplayUiConfig displayUiConfig{
     OLED_SDA_GPIO,
@@ -58,9 +58,11 @@ void calibrateSensors() {
     while (millis() - startTime < 3000) {
         calibrateCallback();
         delay(50);
+
+        
+        serviceTelemetry();
+        serviceDisplayUi();
     }
-    serviceTelemetry();
-    serviceDisplayUi();
     setMotor1Speed(0);
     setMotor2Speed(0);
     finishCalibrationDisplay();
@@ -136,9 +138,7 @@ void doPID() {
     previousError = error;
     
     Serial.println(correction);
-    // setMotor1Speed(speed + correction);
-    // setMotor2Speed(speed - correction);
-    // steer(speed, correction);
+    steer(speed, correction);
 
     publishMotorCommands(speed - correction, speed + correction);
     publishControlLoopTime(micros() - controlStartUs);
@@ -171,7 +171,7 @@ void setup() {
     motorsSetup();
 
     // calibrateSensors();
-
+    
     // startPID = true;
 
     if (!beginDisplayUi(displayUiConfig)) {

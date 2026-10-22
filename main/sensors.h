@@ -27,7 +27,7 @@ uint16_t readADC(int csPin, int channel) {
 
     digitalWrite(csPin, LOW);
 
-    uint8_t commandHigh = 0b00000110 | ((channel & 0x04) >> 2);
+    uint8_t commandHigh = 0b00000110 | (channel >> 2);
     uint8_t commandLow  = (channel & 0x03) << 6;
 
     SPI.transfer(commandHigh);
