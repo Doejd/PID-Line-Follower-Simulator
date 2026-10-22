@@ -251,23 +251,7 @@ void beginTelemetry(const char* ssid, const char* password) {
   /* here i changed this dont delete
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid, password);*/
-
-  IPAddress localIP(192, 168, 4, 1);
-  IPAddress gateway(192, 168, 4, 1);
-  IPAddress subnet(255, 255, 255, 0);
-
-
-  WiFi.mode(WIFI_AP);
-  accessPointStarted = WiFi.softAP(ssid, password);
-
-  if (accessPointStarted) {
-    Serial.println("HERMES Wi-Fi started");
-    Serial.print("Robot IP: ");
-    Serial.println(WiFi.softAPIP());
-  }else {
-    Serial.println("ERROR: Wi-Fi AP failed");
-  }
+  WiFi.begin(ssid, password);
 
   server.on("/", HTTP_GET, handleDashboard);
   server.on("/api/telemetry", HTTP_GET, handleGetTelemetry);
@@ -276,32 +260,12 @@ void beginTelemetry(const char* ssid, const char* password) {
 }
 
 void serviceTelemetry() {
-  // Do not wait for Wi-Fi here: the control loop calls this function
-  // repeatedly, so reconnect attempts remain asynchronous.
-  if (WiFi.status() != WL_CONNECTED) {
-    if (serverStarted) {
-      server.stop();
-      serverStarted = false;
-    }
-    return;
-  }
-
- /*if (!serverStarted) {
-    server.begin();
-    serverStarted = true;
-    Serial.print("Robot IP: ");
-    Serial.println(WiFi.localIP());
-  }
-
-  if (serverStarted) {
-    server.handleClient();
-  }*/
 
   if (!accessPointStarted) {
     return;
   }
 
-  if (!serverStarted) {
+ /*if (!serverStarted) {
     server.begin();
     serverStarted = true;
 
@@ -309,6 +273,8 @@ void serviceTelemetry() {
     Serial.println(WiFi.softAPIP());
   }
 
-  server.handleClient();
+  if (serverStarted) {
+    server.handleClient();
+  }
 }
 

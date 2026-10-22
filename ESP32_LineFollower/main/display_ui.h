@@ -2,6 +2,12 @@
 
 #include <Arduino.h>
 
+constexpr uint8_t OLED_SDA_GPIO = 16;
+constexpr uint8_t OLED_SCL_GPIO = 15; // SDL
+constexpr uint8_t BUTTON_1_GPIO = 17;
+constexpr uint8_t BUTTON_2_GPIO = 18;
+constexpr uint8_t BUTTON_3_GPIO = 8;
+
 // Supply the pins from the verified board schematic when starting the UI.
 // The three buttons are expected to connect their GPIO to GND when pressed.
 struct DisplayUiConfig {
