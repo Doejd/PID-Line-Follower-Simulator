@@ -29,7 +29,7 @@ void handleDashboard() {
     return;
   }
 
-  File dashboard = LittleFS.open("index.html", "r");
+  File dashboard = LittleFS.open("/index.html", "r");
   if (!dashboard) {
     server.send(404, "text/plain; charset=utf-8",
                 "Dashboard file index.html was not found.");
@@ -259,6 +259,7 @@ void beginTelemetry(const char* ssid, const char* password) {
 
 
   WiFi.mode(WIFI_AP);
+  WiFi.softAPconfig(localIP, gateway, subnet);
   accessPointStarted = WiFi.softAP(ssid, password);
 
   if (accessPointStarted) {
@@ -276,26 +277,6 @@ void beginTelemetry(const char* ssid, const char* password) {
 }
 
 void serviceTelemetry() {
-  // Do not wait for Wi-Fi here: the control loop calls this function
-  // repeatedly, so reconnect attempts remain asynchronous.
-  if (WiFi.status() != WL_CONNECTED) {
-    if (serverStarted) {
-      server.stop();
-      serverStarted = false;
-    }
-    return;
-  }
-
- /*if (!serverStarted) {
-    server.begin();
-    serverStarted = true;
-    Serial.print("Robot IP: ");
-    Serial.println(WiFi.localIP());
-  }
-
-  if (serverStarted) {
-    server.handleClient();
-  }*/
 
   if (!accessPointStarted) {
     return;
