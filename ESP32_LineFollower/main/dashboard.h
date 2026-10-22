@@ -1,3 +1,6 @@
+#pragma once
+#include <Arduino.h>
+const char DASHBOARD_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="bg">
 <head>
@@ -238,3 +241,5 @@
 </body>
 </html>
 
+
+)HTML";

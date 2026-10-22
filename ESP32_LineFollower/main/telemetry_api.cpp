@@ -1,5 +1,5 @@
 #include "telemetry_api.h"
-
+#include "dashboard.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <WebServer.h>
@@ -20,25 +20,12 @@ constexpr int MAX_PWM_COMMAND = 255;
 WebServer server(80);
 bool serverStarted = false;
 bool accessPointStarted = false;
-bool dashboardFileSystemReady = false;
+
 
 void handleDashboard() {
-  if (!dashboardFileSystemReady) {
-    server.send(503, "text/plain; charset=utf-8",
-                "Dashboard storage is unavailable. Upload the LittleFS image.");
-    return;
-  }
-
-  File dashboard = LittleFS.open("/index.html", "r");
-  if (!dashboard) {
-    server.send(404, "text/plain; charset=utf-8",
-                "Dashboard file index.html was not found.");
-    return;
-  }
-
-  server.streamFile(dashboard, "text/html; charset=utf-8");
-  dashboard.close();
+  server.send_P(200, "text/html; charset=utf-8", DASHBOARD_HTML);
 }
+
 
 void sendJsonError(int statusCode, const char* message) {
   JsonDocument response;
@@ -214,7 +201,7 @@ void handleGetTelemetry() {
   server.send(200, "application/json", body);
 }
 
-}  // namespace
+ } // namespace
 
 void publishSensorValues(const uint16_t raw[16]) {
   for (int i = 0; i < 16; i++) {
@@ -244,15 +231,6 @@ void publishControlLoopTime(unsigned long elapsedUs) {
 }
 
 void beginTelemetry(const char* ssid, const char* password) {
-  dashboardFileSystemReady = LittleFS.begin(false);
-  if (!dashboardFileSystemReady) {
-    Serial.println("Dashboard LittleFS mount failed; upload the filesystem image.");
-  }
-  /* here i changed this dont delete
-  WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid, password);*/
-
   IPAddress localIP(192, 168, 4, 1);
   IPAddress gateway(192, 168, 4, 1);
   IPAddress subnet(255, 255, 255, 0);
