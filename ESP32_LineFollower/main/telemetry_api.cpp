@@ -248,7 +248,7 @@ void beginTelemetry(const char* ssid, const char* password) {
   if (!dashboardFileSystemReady) {
     Serial.println("Dashboard LittleFS mount failed; upload the filesystem image.");
   }
-  /* here i changed this dont delete
+  /* here i changed this dont delete */
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid, password);
@@ -265,7 +265,7 @@ void serviceTelemetry() {
     return;
   }
 
- /*if (!serverStarted) {
+ if (!serverStarted) {
     server.begin();
     serverStarted = true;
 
