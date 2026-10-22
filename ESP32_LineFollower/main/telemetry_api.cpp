@@ -259,7 +259,7 @@ void beginTelemetry(const char* ssid, const char* password) {
 
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAPconfig(localIP, gateway, subnet);
+  WiFi.softAPConfig(localIP, gateway, subnet);
   accessPointStarted = WiFi.softAP(ssid, password);
 
   if (accessPointStarted) {
